@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { SLANG_COLLECTION } from "./collection";
-import { todaysSlang } from "./today";
+import { slangSequence, todaysSlang } from "./today";
 import type { SlangItem } from "./types";
 
 function makeCollection(size: number): SlangItem[] {
@@ -68,6 +68,31 @@ describe("오늘의 slang", () => {
     const nextDay = names(todaysSlang(new Date(2026, 10, 1), collection));
 
     expect(nextDay.filter((name) => lastDay.includes(name))).toEqual([]);
+  });
+});
+
+describe("더 보기", () => {
+  const collection = makeCollection(9);
+  const date = new Date(2026, 9, 22);
+
+  test("앞의 3개는 오늘의 slang과 같고 그 다음 순서가 이어진다", () => {
+    const six = names(slangSequence(date, 6, collection));
+    const today = names(todaysSlang(date, collection));
+
+    expect(six).toHaveLength(6);
+    expect(six.slice(0, 3)).toEqual(today);
+    expect(six.slice(3).filter((name) => today.includes(name))).toEqual([]);
+  });
+
+  test("모음의 끝을 지나도 처음부터 이어서 계속 돌려준다", () => {
+    const sequence = names(slangSequence(date, 30, collection));
+
+    expect(sequence).toHaveLength(30);
+    expect(sequence.slice(9, 18)).toEqual(sequence.slice(0, 9));
+  });
+
+  test("모음이 비어 있으면 몇 개를 요청해도 빈 목록을 돌려준다", () => {
+    expect(slangSequence(date, 6, [])).toEqual([]);
   });
 });
 

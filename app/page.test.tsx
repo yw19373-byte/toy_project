@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import Home from "@/app/page";
@@ -38,6 +38,25 @@ test("각 항목에서 Wiktionary 출처 링크와 라이선스 표시를 볼 �
     ).toHaveAttribute("href", expect.stringContaining("en.wiktionary.org/wiki/"));
     expect(within(item).getByRole("link", { name: "CC BY-SA 4.0" })).toBeVisible();
   }
+});
+
+test("더 보기를 누를 때마다 3개씩 이어서 추가되고 앞의 항목은 그대로다", () => {
+  render(<Home />);
+  const titles = () =>
+    screen
+      .getAllByRole("listitem")
+      .map((item) => item.querySelector("[data-slot='card-title']")?.textContent);
+  const initial = titles();
+
+  fireEvent.click(screen.getByRole("button", { name: "더 보기" }));
+  const afterOne = titles();
+  expect(afterOne).toHaveLength(6);
+  expect(afterOne.slice(0, 3)).toEqual(initial);
+
+  fireEvent.click(screen.getByRole("button", { name: "더 보기" }));
+  const afterTwo = titles();
+  expect(afterTwo).toHaveLength(9);
+  expect(afterTwo.slice(0, 6)).toEqual(afterOne);
 });
 
 test("같은 날 다시 열면 같은 3개가 나온다", () => {

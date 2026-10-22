@@ -1,9 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { BookOpenIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -22,7 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { dateFromKey, dayKey } from "@/lib/slang/day-key";
 import { LICENSE_NAME, LICENSE_URL, wiktionaryUrl } from "@/lib/slang/source";
-import { todaysSlang } from "@/lib/slang/today";
+import { DAILY_COUNT, slangSequence, todaysSlang } from "@/lib/slang/today";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -69,11 +70,13 @@ function LoadingState() {
 
 export function TodaySlang() {
   const key = useSyncExternalStore(subscribe, getDayKey, getServerDayKey);
+  const [moreCount, setMoreCount] = useState(0);
 
   if (key === null) return <LoadingState />;
 
   const date = dateFromKey(key);
-  const items = todaysSlang(date);
+  const hasToday = todaysSlang(date).length > 0;
+  const items = slangSequence(date, DAILY_COUNT + moreCount);
 
   return (
     <section className="flex flex-col gap-4" aria-labelledby="today-slang">
@@ -89,7 +92,7 @@ export function TodaySlang() {
         </p>
       </header>
 
-      {items.length === 0 ? (
+      {!hasToday ? (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -103,8 +106,8 @@ export function TodaySlang() {
         </Empty>
       ) : (
         <ol className="flex flex-col gap-4">
-          {items.map((item) => (
-            <li key={item.expression}>
+          {items.map((item, index) => (
+            <li key={index}>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl">{item.expression}</CardTitle>
@@ -145,6 +148,16 @@ export function TodaySlang() {
           ))}
         </ol>
       )}
+
+      {hasToday ? (
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => setMoreCount((count) => count + DAILY_COUNT)}
+        >
+          더 보기
+        </Button>
+      ) : null}
     </section>
   );
 }
