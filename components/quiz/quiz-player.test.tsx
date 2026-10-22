@@ -67,6 +67,10 @@ test("정답을 고르면 정답 표시가 나오고 다음 문제로 넘어갈 
   expect(await screen.findByText("정답입니다!")).toBeInTheDocument();
   expect(submitAnswer).toHaveBeenCalledWith("slang", "tea", "tea");
 
+  // 답을 저장하는 전환이 끝나기 전에는 버튼이 잠겨 있으므로 풀릴 때까지 기다린다.
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "다음 문제" })).toBeEnabled(),
+  );
   fireEvent.click(screen.getByRole("button", { name: "다음 문제" }));
 
   await waitFor(() =>
@@ -106,6 +110,9 @@ test("저장에 실패하면 오류를 보여주고 다시 고를 수 있다", a
   fireEvent.click(screen.getByRole("button", { name: "tea" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("답을 저장하지 못했습니다.");
 
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "tea" })).toBeEnabled(),
+  );
   fireEvent.click(screen.getByRole("button", { name: "tea" }));
   expect(await screen.findByText("정답입니다!")).toBeInTheDocument();
 });
