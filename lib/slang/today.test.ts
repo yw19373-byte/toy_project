@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { SLANG_COLLECTION } from "./collection";
-import { slangSequence, todaysSlang } from "./today";
+import { slangBatches, slangSequence, todaysSlang } from "./today";
 import type { SlangItem } from "./types";
 
 function makeCollection(size: number): SlangItem[] {
@@ -93,6 +93,27 @@ describe("더 보기", () => {
 
   test("모음이 비어 있으면 몇 개를 요청해도 빈 목록을 돌려준다", () => {
     expect(slangSequence(date, 6, [])).toEqual([]);
+  });
+
+  test("묶음은 3개씩이고 가장 나중에 이어진 묶음이 맨 앞에 온다", () => {
+    const batches = slangBatches(date, 3, collection).map(names);
+    const today = names(todaysSlang(date, collection));
+    const flat = names(slangSequence(date, 9, collection));
+
+    expect(batches).toHaveLength(3);
+    expect(batches[2]).toEqual(today);
+    expect(batches[0]).toEqual(flat.slice(6, 9));
+    expect(batches[1]).toEqual(flat.slice(3, 6));
+  });
+
+  test("묶음이 하나뿐이면 오늘의 slang만 돌려준다", () => {
+    expect(slangBatches(date, 1, collection).map(names)).toEqual([
+      names(todaysSlang(date, collection)),
+    ]);
+  });
+
+  test("모음이 비어 있으면 묶음도 없다", () => {
+    expect(slangBatches(date, 3, [])).toEqual([]);
   });
 });
 

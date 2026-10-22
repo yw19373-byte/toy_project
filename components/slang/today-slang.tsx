@@ -23,7 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { dateFromKey, dayKey } from "@/lib/slang/day-key";
 import { LICENSE_NAME, LICENSE_URL, wiktionaryUrl } from "@/lib/slang/source";
-import { DAILY_COUNT, slangSequence, todaysSlang } from "@/lib/slang/today";
+import { slangBatches, todaysSlang } from "@/lib/slang/today";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -70,13 +70,17 @@ function LoadingState() {
 
 export function TodaySlang() {
   const key = useSyncExternalStore(subscribe, getDayKey, getServerDayKey);
-  const [moreCount, setMoreCount] = useState(0);
+  const [batchCount, setBatchCount] = useState(1);
 
   if (key === null) return <LoadingState />;
 
   const date = dateFromKey(key);
   const hasToday = todaysSlang(date).length > 0;
-  const items = slangSequence(date, DAILY_COUNT + moreCount);
+  // 가장 나중에 이어진 묶음이 맨 앞이므로, 묶음 번호는 뒤에서부터 센다.
+  const batches = slangBatches(date, batchCount).map((items, i) => ({
+    id: batchCount - 1 - i,
+    items,
+  }));
 
   return (
     <section className="flex flex-col gap-4" aria-labelledby="today-slang">
@@ -92,6 +96,16 @@ export function TodaySlang() {
         </p>
       </header>
 
+      {hasToday ? (
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => setBatchCount((count) => count + 1)}
+        >
+          더 보기
+        </Button>
+      ) : null}
+
       {!hasToday ? (
         <Empty>
           <EmptyHeader>
@@ -106,8 +120,10 @@ export function TodaySlang() {
         </Empty>
       ) : (
         <ol className="flex flex-col gap-4">
-          {items.map((item, index) => (
-            <li key={index}>
+          {batches.flatMap(({ id, items }) =>
+            items.map((item, index) => ({ key: `${id}-${index}`, item })),
+          ).map(({ key: itemKey, item }) => (
+            <li key={itemKey}>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl">{item.expression}</CardTitle>
@@ -148,16 +164,6 @@ export function TodaySlang() {
           ))}
         </ol>
       )}
-
-      {hasToday ? (
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => setMoreCount((count) => count + DAILY_COUNT)}
-        >
-          더 보기
-        </Button>
-      ) : null}
     </section>
   );
 }

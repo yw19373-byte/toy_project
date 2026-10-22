@@ -40,7 +40,7 @@ test("각 항목에서 Wiktionary 출처 링크와 라이선스 표시를 볼 �
   }
 });
 
-test("더 보기를 누를 때마다 3개씩 이어서 추가되고 앞의 항목은 그대로다", () => {
+test("더 보기를 누르면 새 3개가 맨 위에 오고 이전 항목은 아래로 밀린다", () => {
   render(<Home />);
   const titles = () =>
     screen
@@ -51,12 +51,24 @@ test("더 보기를 누를 때마다 3개씩 이어서 추가되고 앞의 항�
   fireEvent.click(screen.getByRole("button", { name: "더 보기" }));
   const afterOne = titles();
   expect(afterOne).toHaveLength(6);
-  expect(afterOne.slice(0, 3)).toEqual(initial);
+  expect(afterOne.slice(3)).toEqual(initial);
 
   fireEvent.click(screen.getByRole("button", { name: "더 보기" }));
   const afterTwo = titles();
   expect(afterTwo).toHaveLength(9);
-  expect(afterTwo.slice(0, 6)).toEqual(afterOne);
+  expect(afterTwo.slice(3)).toEqual(afterOne);
+  expect(new Set(afterTwo.slice(0, 3))).not.toEqual(new Set(afterOne.slice(0, 3)));
+});
+
+test("더 보기 버튼은 목록 위에 있어 눌러도 새 항목이 바로 아래에 보인다", () => {
+  render(<Home />);
+
+  const button = screen.getByRole("button", { name: "더 보기" });
+  const list = screen.getByRole("list");
+
+  expect(
+    button.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test("같은 날 다시 열면 같은 3개가 나온다", () => {

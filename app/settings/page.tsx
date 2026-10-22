@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signOut } from "@/app/login/actions";
 import { ProfileForm } from "@/components/settings/profile-form";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,7 +39,10 @@ export default async function SettingsPage() {
         <CardContent>
           <ProfileForm displayName={profile?.display_name ?? ""} />
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-wrap gap-2">
+          <Link href="/" className={buttonVariants()}>
+            오늘의 slang 보기
+          </Link>
           <form action={signOut}>
             <Button type="submit" variant="outline">
               로그아웃

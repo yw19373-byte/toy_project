@@ -25,6 +25,23 @@ export function slangSequence(
   return Array.from({ length: count }, (_, i) => collection[(start + i) % size]);
 }
 
+// 3개씩 묶어 돌려주되, 가장 나중에 이어진 묶음이 맨 앞에 오도록 뒤집는다.
+export function slangBatches(
+  date: Date,
+  batchCount: number,
+  collection: readonly SlangItem[] = SLANG_COLLECTION,
+): SlangItem[][] {
+  const size = collection.length;
+  if (size === 0) return [];
+
+  const perBatch = Math.min(DAILY_COUNT, size);
+  const sequence = slangSequence(date, perBatch * batchCount, collection);
+
+  return Array.from({ length: batchCount }, (_, i) =>
+    sequence.slice(i * perBatch, (i + 1) * perBatch),
+  ).reverse();
+}
+
 export function todaysSlang(
   date: Date,
   collection: readonly SlangItem[] = SLANG_COLLECTION,
