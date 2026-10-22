@@ -24,6 +24,10 @@ export function dayKey(search: string, now: Date): string {
   return requested !== null && parseKey(requested) ? requested : toKey(now);
 }
 
+export function isDayKey(key: string): boolean {
+  return parseKey(key) !== null;
+}
+
 export function dateFromKey(key: string): Date {
   const date = parseKey(key);
   if (!date) throw new Error(`Invalid day key: ${key}`);

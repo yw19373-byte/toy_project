@@ -42,9 +42,11 @@ describe("퀴즈 문제 만들기", () => {
   test("보기는 4개이고 서로 다르며 정답이 정확히 한 번 들어 있다", () => {
     const question = buildQuestion(["expr-3"], collection, constant(0.3));
 
-    expect(question?.options).toHaveLength(4);
-    expect(new Set(question?.options).size).toBe(4);
-    expect(question?.options.filter((o) => o === "expr-3")).toHaveLength(1);
+    const values = question?.options.map((option) => option.value);
+
+    expect(values).toHaveLength(4);
+    expect(new Set(values).size).toBe(4);
+    expect(values?.filter((value) => value === "expr-3")).toHaveLength(1);
   });
 
   test("문제는 정답 표현의 한국어 번역과 영어 정의를 보여준다", () => {
@@ -71,7 +73,7 @@ describe("퀴즈 문제 만들기", () => {
 
     for (let seed = 1; seed <= 40; seed++) {
       const question = buildQuestion(["expr-3"], collection, seededRandom(seed));
-      positions.add(question!.options.indexOf("expr-3"));
+      positions.add(question!.options.findIndex((option) => option.value === "expr-3"));
     }
 
     expect(positions.size).toBeGreaterThan(1);
@@ -81,6 +83,33 @@ describe("퀴즈 문제 만들기", () => {
     const question = buildQuestion(["expr-0"], makeCollection(2), constant(0.4));
 
     expect(question?.options).toHaveLength(2);
+  });
+});
+
+describe("퀴즈 보기 이름", () => {
+  test("한국어 이름이 있는 항목은 보기에 한국어 이름을 보여준다", () => {
+    const health: SlangItem[] = ["a", "b", "c", "d", "e"].map((name) => ({
+      expression: `Topic ${name}`,
+      titleKo: `주제 ${name}`,
+      definition: `Definition ${name}`,
+      ko: `설명 ${name}`,
+    }));
+    const question = buildQuestion(["Topic a"], health, constant(0.2));
+
+    expect(question?.options.every((option) => option.label.startsWith("주제 "))).toBe(
+      true,
+    );
+    expect(question?.options.find((option) => option.value === "Topic a")?.label).toBe(
+      "주제 a",
+    );
+  });
+
+  test("한국어 이름이 없으면 표현을 그대로 보여준다", () => {
+    const question = buildQuestion(["expr-1"], makeCollection(5), constant(0.2));
+
+    expect(question?.options.find((option) => option.value === "expr-1")?.label).toBe(
+      "expr-1",
+    );
   });
 });
 

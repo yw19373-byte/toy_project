@@ -1,13 +1,17 @@
+import { displayTitle } from "@/lib/content/kinds";
 import { SLANG_COLLECTION } from "@/lib/slang/collection";
-import type { SlangItem } from "@/lib/slang/types";
+import type { ContentItem } from "@/lib/slang/types";
 
 const OPTION_COUNT = 4;
+
+// value는 항목을 구별하는 이름이고, label은 화면에 보이는 이름이다.
+export type QuizOption = { value: string; label: string };
 
 export type QuizQuestion = {
   expression: string;
   ko: string;
   definition: string;
-  options: string[];
+  options: QuizOption[];
 };
 
 function pick<T>(items: readonly T[], random: () => number): T {
@@ -23,10 +27,14 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
   return result;
 }
 
-// 본 표현 중 하나를 정답으로 고르고, 모음의 다른 표현으로 오답 보기를 채운다.
+function toOption(item: ContentItem): QuizOption {
+  return { value: item.expression, label: displayTitle(item) };
+}
+
+// 본 표현 중 하나를 정답으로 고르고, 모음의 다른 항목으로 오답 보기를 채운다.
 export function buildQuestion(
   seen: readonly string[],
-  collection: readonly SlangItem[] = SLANG_COLLECTION,
+  collection: readonly ContentItem[] = SLANG_COLLECTION,
   random: () => number = Math.random,
 ): QuizQuestion | null {
   const byExpression = new Map(collection.map((item) => [item.expression, item]));
@@ -34,15 +42,15 @@ export function buildQuestion(
   if (candidates.length === 0) return null;
 
   const answer = byExpression.get(pick(candidates, random))!;
-  const others = collection
-    .filter((item) => item.expression !== answer.expression)
-    .map((item) => item.expression);
-  const distractors = shuffle(others, random).slice(0, OPTION_COUNT - 1);
+  const distractors = shuffle(
+    collection.filter((item) => item.expression !== answer.expression),
+    random,
+  ).slice(0, OPTION_COUNT - 1);
 
   return {
     expression: answer.expression,
     ko: answer.ko,
     definition: answer.definition,
-    options: shuffle([answer.expression, ...distractors], random),
+    options: shuffle([answer, ...distractors].map(toOption), random),
   };
 }

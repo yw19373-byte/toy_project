@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { dateFromKey, dayKey } from "./day-key";
+import { dateFromKey, dayKey, isDayKey } from "./day-key";
 import { wiktionaryUrl } from "./source";
 
 describe("출처 링크", () => {
@@ -29,6 +29,13 @@ describe("날짜 키", () => {
   test("형식이 틀리거나 없는 날짜는 무시하고 오늘 날짜를 쓴다", () => {
     expect(dayKey("?date=tomorrow", now)).toBe("2026-10-22");
     expect(dayKey("?date=2026-13-40", now)).toBe("2026-10-22");
+  });
+
+  test("실제로 있는 날짜 형식만 날짜 키로 인정한다", () => {
+    expect(isDayKey("2026-10-22")).toBe(true);
+    expect(isDayKey("2026-02-30")).toBe(false);
+    expect(isDayKey("22-10-2026")).toBe(false);
+    expect(isDayKey("")).toBe(false);
   });
 
   test("날짜 키를 해당 날짜의 정오 Date로 되돌린다", () => {

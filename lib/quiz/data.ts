@@ -1,10 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { tablesFor, type ContentKind } from "@/lib/content/kinds";
+
 // 로그인한 사용자가 본 표현 목록. RLS 덕분에 본인 기록만 조회된다.
 export async function loadSeenExpressions(
   supabase: SupabaseClient,
+  kind: ContentKind,
 ): Promise<string[]> {
-  const { data, error } = await supabase.from("slang_views").select("expression");
+  const { data, error } = await supabase
+    .from(tablesFor(kind).views)
+    .select("expression");
   if (error || !data) return [];
   return data.map((row) => row.expression as string);
 }

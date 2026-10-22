@@ -5,5 +5,5 @@ export default async function Home() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
 
-  return <HomeView signedIn={Boolean(data?.claims)} />;
+  return <HomeView kind="slang" signedIn={Boolean(data?.claims)} />;
 }

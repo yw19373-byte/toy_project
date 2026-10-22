@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 
 const LINKS = [
   { href: "/", label: "오늘의 slang" },
+  { href: "/health", label: "건강" },
   { href: "/quiz", label: "퀴즈" },
   { href: "/stats", label: "내 통계" },
   { href: "/settings", label: "내 설정" },

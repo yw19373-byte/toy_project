@@ -9,9 +9,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  collectionFor,
+  HEALTH_CATEGORIES,
+  HEALTH_CATEGORY_LABELS,
+  KINDS,
+  tablesFor,
+  type ContentKind,
+} from "@/lib/content/kinds";
 import { accuracyPercent } from "@/lib/quiz/stats";
-import { SLANG_COLLECTION } from "@/lib/slang/collection";
 import { createClient } from "@/lib/supabase/server";
+
+const ORDER: ContentKind[] = ["slang", "health"];
 
 function StatCard({
   label,
@@ -33,6 +42,39 @@ function StatCard({
   );
 }
 
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+
+// RLS 덕분에 본인 기록만 집계된다. 본 항목은 지금 모음에 있는 것만 센다.
+async function loadCounts(supabase: SupabaseServer, kind: ContentKind) {
+  const tables = tablesFor(kind);
+  const [views, answers, correct] = await Promise.all([
+    supabase.from(tables.views).select("expression"),
+    supabase.from(tables.answers).select("id", { count: "exact", head: true }),
+    supabase
+      .from(tables.answers)
+      .select("id", { count: "exact", head: true })
+      .eq("correct", true),
+  ]);
+
+  const collection = collectionFor(kind);
+  const known = new Map(collection.map((item) => [item.expression, item]));
+  const seenItems = (views.data ?? [])
+    .map((row) => known.get(row.expression as string))
+    .filter((item): item is NonNullable<typeof item> => item !== undefined);
+
+  return {
+    seen: seenItems.length,
+    seenByCategory: Object.fromEntries(
+      HEALTH_CATEGORIES.map((category) => [
+        category,
+        seenItems.filter((item) => item.category === category).length,
+      ]),
+    ),
+    answered: answers.count ?? 0,
+    correct: correct.count ?? 0,
+  };
+}
+
 export default async function StatsPage() {
   const supabase = await createClient();
 
@@ -40,20 +82,9 @@ export default async function StatsPage() {
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) redirect("/login");
 
-  // RLS 덕분에 본인 기록만 집계된다.
-  const [views, answers, correct] = await Promise.all([
-    supabase.from("slang_views").select("expression", { count: "exact", head: true }),
-    supabase.from("quiz_answers").select("id", { count: "exact", head: true }),
-    supabase
-      .from("quiz_answers")
-      .select("id", { count: "exact", head: true })
-      .eq("correct", true),
-  ]);
-
-  const seenCount = views.count ?? 0;
-  const answerCount = answers.count ?? 0;
-  const correctCount = correct.count ?? 0;
-  const accuracy = accuracyPercent(correctCount, answerCount);
+  const counts = await Promise.all(
+    ORDER.map(async (kind) => [kind, await loadCounts(supabase, kind)] as const),
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:py-12">
@@ -68,20 +99,44 @@ export default async function StatsPage() {
         </p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="본 표현"
-          value={`${seenCount}개`}
-          note={`전체 ${SLANG_COLLECTION.length}개 중`}
-        />
-        <StatCard
-          label="정답률"
-          value={accuracy === null ? "아직 없음" : `${accuracy}%`}
-          note={accuracy === null ? "퀴즈를 풀면 보여요" : undefined}
-        />
-        <StatCard label="퀴즈 푼 횟수" value={`${answerCount}번`} />
-        <StatCard label="정답 수" value={`${correctCount}개`} />
-      </div>
+      {counts.map(([kind, { seen, seenByCategory, answered, correct }]) => {
+        const accuracy = accuracyPercent(correct, answered);
+        const total = collectionFor(kind).length;
+
+        return (
+          <section
+            key={kind}
+            aria-labelledby={`stats-${kind}`}
+            className="flex flex-col gap-3"
+          >
+            <h2
+              id={`stats-${kind}`}
+              className="font-heading text-lg font-medium"
+            >
+              {KINDS[kind].label}
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard label="본 항목" value={`${seen}개`} note={`전체 ${total}개 중`} />
+              <StatCard
+                label="정답률"
+                value={accuracy === null ? "아직 없음" : `${accuracy}%`}
+                note={accuracy === null ? "퀴즈를 풀면 보여요" : undefined}
+              />
+              <StatCard label="퀴즈 푼 횟수" value={`${answered}번`} />
+              <StatCard label="정답 수" value={`${correct}개`} />
+            </div>
+            {kind === "health" ? (
+              <p className="text-sm text-muted-foreground">
+                분류별 본 항목:{" "}
+                {HEALTH_CATEGORIES.map(
+                  (category) =>
+                    `${HEALTH_CATEGORY_LABELS[category]} ${seenByCategory[category]}개`,
+                ).join(", ")}
+              </p>
+            ) : null}
+          </section>
+        );
+      })}
 
       <Link href="/quiz" className={buttonVariants({ size: "lg" })}>
         퀴즈 풀기

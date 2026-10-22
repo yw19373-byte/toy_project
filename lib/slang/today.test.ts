@@ -123,7 +123,7 @@ describe("검수 모음", () => {
       expect(item.expression.trim()).not.toBe("");
       expect(item.definition.trim()).not.toBe("");
       expect(item.ko.trim()).not.toBe("");
-      expect(item.example.trim()).not.toBe("");
+      expect(item.example?.trim()).toBeTruthy();
     }
   });
 
