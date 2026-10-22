@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { signOut } from "@/app/login/actions";
+import { AppNav } from "@/components/app-nav";
 import { ProfileForm } from "@/components/settings/profile-form";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -31,6 +31,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8 sm:py-12">
+      <AppNav current="/settings" />
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">내 설정</CardTitle>
@@ -39,10 +40,7 @@ export default async function SettingsPage() {
         <CardContent>
           <ProfileForm displayName={profile?.display_name ?? ""} />
         </CardContent>
-        <CardFooter className="flex flex-wrap gap-2">
-          <Link href="/" className={buttonVariants()}>
-            오늘의 slang 보기
-          </Link>
+        <CardFooter>
           <form action={signOut}>
             <Button type="submit" variant="outline">
               로그아웃

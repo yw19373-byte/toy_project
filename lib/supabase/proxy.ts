@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { supabaseEnv } from "./env";
 
-const PROTECTED_PATHS = ["/settings"];
+const PROTECTED_PATHS = ["/settings", "/quiz", "/stats"];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PATHS.some(

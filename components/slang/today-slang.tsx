@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { BookOpenIcon } from "lucide-react";
 
+import { recordViews } from "@/app/activity-actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -68,19 +69,42 @@ function LoadingState() {
   );
 }
 
-export function TodaySlang() {
+export function TodaySlang({ signedIn }: { signedIn: boolean }) {
   const key = useSyncExternalStore(subscribe, getDayKey, getServerDayKey);
   const [batchCount, setBatchCount] = useState(1);
+  const recorded = useRef(new Set<string>());
 
-  if (key === null) return <LoadingState />;
-
-  const date = dateFromKey(key);
-  const hasToday = todaysSlang(date).length > 0;
+  const date = key === null ? null : dateFromKey(key);
   // 가장 나중에 이어진 묶음이 맨 앞이므로, 묶음 번호는 뒤에서부터 센다.
-  const batches = slangBatches(date, batchCount).map((items, i) => ({
-    id: batchCount - 1 - i,
-    items,
-  }));
+  const batches = date
+    ? slangBatches(date, batchCount).map((items, i) => ({
+        id: batchCount - 1 - i,
+        items,
+      }))
+    : [];
+  const shownKey = batches
+    .flatMap(({ items }) => items.map((item) => item.expression))
+    .join("|");
+
+  // 로그인한 사용자에게 보인 표현을 한 번씩만 서버에 기록한다.
+  useEffect(() => {
+    if (!signedIn || shownKey === "") return;
+
+    const fresh = shownKey
+      .split("|")
+      .filter((expression) => !recorded.current.has(expression));
+    if (fresh.length === 0) return;
+
+    for (const expression of fresh) recorded.current.add(expression);
+    void recordViews(fresh).catch(() => {
+      // 기록 실패가 화면을 막으면 안 된다. 다음에 다시 보일 때 기록된다.
+      for (const expression of fresh) recorded.current.delete(expression);
+    });
+  }, [signedIn, shownKey]);
+
+  if (key === null || date === null) return <LoadingState />;
+
+  const hasToday = todaysSlang(date).length > 0;
 
   return (
     <section className="flex flex-col gap-4" aria-labelledby="today-slang">
