@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { parseCredentials } from "@/lib/auth/credentials";
+import { signUpErrorMessage } from "@/lib/auth/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error?: string; notice?: string } | undefined;
@@ -37,7 +38,9 @@ export async function signUp(
     password: input.password,
   });
   if (error) {
-    return { error: "가입하지 못했습니다. 이미 가입한 이메일인지 확인해 주세요." };
+    // 원인을 서버 로그에서 확인할 수 있게 코드와 상태만 남긴다. 이메일과 비밀번호는 남기지 않는다.
+    console.error("signUp failed", { code: error.code, status: error.status });
+    return { error: signUpErrorMessage(error) };
   }
 
   // 이메일 확인이 켜져 있으면 세션이 없다. 확인 후 로그인하도록 안내한다.
